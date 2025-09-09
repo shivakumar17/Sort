@@ -7,9 +7,8 @@ from PIL import Image
 import pytesseract
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
-import pytesseract
 
-# Explicit tesseract path
+# Explicit path for tesseract
 pytesseract.pytesseract.tesseract_cmd = "/usr/bin/tesseract"
 
 UPLOAD_FOLDER = 'uploads'
@@ -23,13 +22,10 @@ app.config['OUTPUT_FOLDER'] = OUTPUT_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
-# Keywords to look for
 KEYWORDS = ['invoice', 'total', 'date', 'amount', 'paid', 'AUTOSAR', 'shiva']
-
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
 
 def extract_text_from_pdf(pdf_path):
     text = ""
@@ -38,7 +34,6 @@ def extract_text_from_pdf(pdf_path):
     except Exception as e:
         print(f"Error opening PDF: {e}")
         return "[Error opening PDF]"
-
     for i, page in enumerate(doc):
         try:
             page_text = page.get_text().strip()
@@ -59,7 +54,6 @@ def extract_text_from_pdf(pdf_path):
             text += f"[Error reading page {i+1}]\n"
     return text
 
-
 def extract_text_from_image(image_path):
     try:
         image = Image.open(image_path)
@@ -67,7 +61,6 @@ def extract_text_from_image(image_path):
     except Exception as e:
         print(f"Image OCR failed: {e}")
         return "[Error extracting text from image]"
-
 
 def extract_keywords(text, keywords):
     found = []
@@ -77,7 +70,6 @@ def extract_keywords(text, keywords):
                 found.append(line)
                 break
     return "\n".join(found)
-
 
 def generate_pdf(text, output_path):
     try:
@@ -94,6 +86,15 @@ def generate_pdf(text, output_path):
     except Exception as e:
         print(f"PDF generation failed: {e}")
 
+@app.route('/check')
+def check_tools():
+    import subprocess
+    try:
+        subprocess.run(['tesseract', '--version'], check=True)
+        subprocess.run(['pdftoppm', '-h'], check=True)
+        return "✅ All tools are installed and working!"
+    except Exception as e:
+        return f"❌ Tools check failed: {e}"
 
 @app.route('/', methods=['GET', 'POST'])
 def upload_file():
@@ -119,11 +120,9 @@ def upload_file():
 
             return "Invalid file type. Only .pdf and .jpg are allowed."
         return render_template('upload.html')
-
     except Exception as e:
         print(f"🔥 Internal Server Error: {e}")
         return "Internal Server Error. Please check server logs.", 500
 
-
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=10000, debug=True)
