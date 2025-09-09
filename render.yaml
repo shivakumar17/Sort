@@ -4,9 +4,6 @@ services:
     env: python
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app
-    envVars:
-      - key: PYTHONUNBUFFERED
-        value: "TRUE"
     build:
       packages:
         - poppler-utils
