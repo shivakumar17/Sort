@@ -1,10 +1,10 @@
 services:
   - type: web
-    name: flask-keyword-filter
-    env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app
-    build:
-      packages:
-        - poppler-utils
-        - tesseract-ocr
+    name: your-app-name
+    env: debian
+    region: oregon  # or the region you prefer
+    buildCommand: |
+      apt-get update && apt-get install -y poppler-utils tesseract-ocr libgl1-mesa-glx libglib2.0-0
+      pip install -r requirements.txt
+    startCommand: python app.py
+    plan: free  # or standard as needed

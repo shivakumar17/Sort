@@ -7,6 +7,10 @@ from PIL import Image
 import pytesseract
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+import pytesseract
+
+# Explicit tesseract path
+pytesseract.pytesseract.tesseract_cmd = "/usr/bin/tesseract"
 
 UPLOAD_FOLDER = 'uploads'
 OUTPUT_FOLDER = 'outputs'
@@ -42,7 +46,7 @@ def extract_text_from_pdf(pdf_path):
                 text += page_text + "\n"
             else:
                 try:
-                    images = convert_from_path(pdf_path, first_page=i+1, last_page=i+1)
+                    images = convert_from_path(pdf_path, first_page=i+1, last_page=i+1, poppler_path='/usr/bin')
                     for image in images:
                         ocr_text = pytesseract.image_to_string(image)
                         print(f"OCR page {i+1} content:\n{ocr_text}")
