@@ -42,12 +42,11 @@ def extract_text_from_pdf(pdf_path):
                 text += page_text + "\n"
             else:
                 try:
-                images = convert_from_path(pdf_path, first_page=i+1, last_page=i+1)
-                for image in images:
-                    ocr_text = pytesseract.image_to_string(image)
-                    print(f"OCR page {i+1} content:\n{ocr_text}")
-                    text += ocr_text + "\n"
-
+                    images = convert_from_path(pdf_path, first_page=i+1, last_page=i+1)
+                    for image in images:
+                        ocr_text = pytesseract.image_to_string(image)
+                        print(f"OCR page {i+1} content:\n{ocr_text}")
+                        text += ocr_text + "\n"
                 except Exception as ocr_error:
                     print(f"OCR failed on page {i+1}: {ocr_error}")
                     text += f"[OCR error on page {i+1}]\n"
