@@ -87,14 +87,30 @@ def generate_pdf(text, output_path):
         print(f"PDF generation failed: {e}")
 
 @app.route('/check')
+import subprocess
+
+@app.route('/check')
 def check_tools():
-    import subprocess
     try:
-        subprocess.run(['tesseract', '--version'], check=True)
-        subprocess.run(['pdftoppm', '-h'], check=True)
-        return "✅ All tools are installed and working!"
+        # Check if pdftoppm (poppler) is installed
+        poppler_check = subprocess.run(["pdftoppm", "-v"], capture_output=True, text=True)
+        poppler_installed = "✔️ Installed" if poppler_check.returncode == 0 else "❌ Not installed"
+
+        # Check if tesseract is installed
+        tesseract_check = subprocess.run(["tesseract", "--version"], capture_output=True, text=True)
+        tesseract_installed = "✔️ Installed" if tesseract_check.returncode == 0 else "❌ Not installed"
+
+        result = f"""
+        <h2>Tools Check</h2>
+        <p>Poppler (pdftoppm): {poppler_installed}</p>
+        <pre>{poppler_check.stdout}</pre>
+        <p>Tesseract OCR: {tesseract_installed}</p>
+        <pre>{tesseract_check.stdout}</pre>
+        """
+        return result
     except Exception as e:
-        return f"❌ Tools check failed: {e}"
+        return f"<p>❌ Error checking tools: {e}</p>"
+
 
 @app.route('/', methods=['GET', 'POST'])
 def upload_file():
