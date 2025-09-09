@@ -29,8 +29,35 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def extract_text_from_pdf(pdf_path):
-    # Your existing code here
-    return "Dummy text for now"  # placeholder for testing
+    text = ""
+    try:
+        doc = fitz.open(pdf_path)
+    except Exception as e:
+        print(f"Error opening PDF: {e}")
+        return "[Error opening PDF]"
+    for i in range(len(doc)):
+        try:
+            page = doc[i]
+            page_text = page.get_text().strip()
+            if page_text:
+                text += page_text + "\n"
+
+            # Always run OCR and append result
+            try:
+                images = convert_from_path(pdf_path, first_page=i+1, last_page=i+1, poppler_path='/usr/bin')
+                for image in images:
+                    ocr_text = pytesseract.image_to_string(image)
+                    print(f"OCR page {i+1} content:\n{ocr_text}")
+                    text += ocr_text + "\n"
+            except Exception as ocr_error:
+                print(f"OCR failed on page {i+1}: {ocr_error}")
+                text += f"[OCR error on page {i+1}]\n"
+
+        except Exception as page_error:
+            print(f"Error reading page {i+1}: {page_error}")
+            text += f"[Error reading page {i+1}]\n"
+    return text
+
 
 def extract_text_from_image(image_path):
     # Your existing code here
