@@ -7,6 +7,7 @@ from PIL import Image
 import pytesseract
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+import subprocess
 
 # Explicit path for tesseract
 pytesseract.pytesseract.tesseract_cmd = "/usr/bin/tesseract"
@@ -85,9 +86,6 @@ def generate_pdf(text, output_path):
         c.save()
     except Exception as e:
         print(f"PDF generation failed: {e}")
-
-@app.route('/check')
-import subprocess
 
 @app.route('/check')
 def check_tools():
