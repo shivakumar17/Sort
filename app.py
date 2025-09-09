@@ -35,7 +35,7 @@ def extract_text_from_pdf(pdf_path):
         if page_text:
             text += page_text + "\n"
         else:
-            images = convert_from_path(pdf_path, poppler_path=r"C:\poppler\Library\bin", first_page=i+1, last_page=i+1)
+            images = convert_from_path(pdf_path, first_page=i+1, last_page=i+1)
             for image in images:
                 text += pytesseract.image_to_string(image) + "\n"
     return text
