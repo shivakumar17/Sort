@@ -64,12 +64,29 @@ def extract_text_from_image(image_path):
     return "Dummy text for now"
 
 def extract_keywords(text, keywords):
-    # Your existing code here
-    return text
+    found = []
+    for line in text.splitlines():
+        for word in keywords:
+            if word.lower() in line.lower():
+                found.append(line)
+                break  # Avoid adding the same line multiple times if it contains several keywords
+    return "\n".join(found)
 
 def generate_pdf(text, output_path):
-    # Your existing code here
-    pass
+    try:
+        c = canvas.Canvas(output_path, pagesize=letter)
+        width, height = letter
+        y = height - 50
+        for line in text.split('\n'):
+            if y < 50:
+                c.showPage()
+                y = height - 50
+            c.drawString(50, y, line)
+            y -= 15
+        c.save()
+    except Exception as e:
+        print(f"PDF generation failed: {e}")
+
 
 @app.route('/check')
 def check_tools():
@@ -109,7 +126,8 @@ def upload_file():
                     text = extract_text_from_image(file_path)
 
                 filtered_text = extract_keywords(text, KEYWORDS)
-                output_pdf_path = os.path.join(app.config['OUTPUT_FOLDER'], f'output_{filename}.pdf')
+                base_filename = os.path.splitext(filename)[0]  # Removes the extension
+                output_pdf_path = os.path.join(app.config['OUTPUT_FOLDER'], f'output_{base_filename}.pdf')
                 generate_pdf(filtered_text, output_pdf_path)
 
                 return send_file(output_pdf_path, as_attachment=True)
