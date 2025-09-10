@@ -8,9 +8,18 @@ import pytesseract
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 import subprocess
+import platform
 
-# Explicit path for tesseract
-pytesseract.pytesseract.tesseract_cmd = "/usr/bin/tesseract"
+# Detect OS to set correct paths
+IS_WINDOWS = platform.system() == 'Windows'
+
+if IS_WINDOWS:
+    pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+    POPPLER_PATH = r"C:\poppler\Library\bin"
+else:
+    # Linux paths on Render server
+    pytesseract.pytesseract.tesseract_cmd = "/usr/bin/tesseract"
+    POPPLER_PATH = "/usr/bin"
 
 UPLOAD_FOLDER = 'uploads'
 OUTPUT_FOLDER = 'outputs'
@@ -23,7 +32,8 @@ app.config['OUTPUT_FOLDER'] = OUTPUT_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
-KEYWORDS = ['invoice', 'total', 'date', 'amount', 'paid', 'AUTOSAR', 'telugu','mother','Aadhaar']
+# Keywords to search for
+KEYWORDS = ['invoice', 'total', 'date', 'amount', 'paid', 'AUTOSAR', 'telugu', 'mother', 'Aadhaar']
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -35,6 +45,7 @@ def extract_text_from_pdf(pdf_path):
     except Exception as e:
         print(f"Error opening PDF: {e}")
         return "[Error opening PDF]"
+
     for i in range(len(doc)):
         try:
             page = doc[i]
@@ -44,11 +55,12 @@ def extract_text_from_pdf(pdf_path):
 
             # Always run OCR and append result
             try:
-                images = convert_from_path(pdf_path, first_page=i+1, last_page=i+1, poppler_path='/usr/bin')
+                images = convert_from_path(pdf_path, first_page=i+1, last_page=i+1, poppler_path=None if not IS_WINDOWS else POPPLER_PATH)
                 for image in images:
-                    ocr_text = pytesseract.image_to_string(image)
+                    ocr_text = pytesseract.image_to_string(image, lang='eng+tel')
                     print(f"OCR page {i+1} content:\n{ocr_text}")
-                    text += ocr_text + "\n"
+                    if ocr_text.strip():
+                        text += ocr_text + "\n"
             except Exception as ocr_error:
                 print(f"OCR failed on page {i+1}: {ocr_error}")
                 text += f"[OCR error on page {i+1}]\n"
@@ -58,10 +70,15 @@ def extract_text_from_pdf(pdf_path):
             text += f"[Error reading page {i+1}]\n"
     return text
 
-
 def extract_text_from_image(image_path):
-    # Your existing code here
-    return "Dummy text for now"
+    try:
+        image = Image.open(image_path)
+        ocr_text = pytesseract.image_to_string(image, lang='eng+tel')
+        print(f"OCR image content:\n{ocr_text}")
+        return ocr_text
+    except Exception as e:
+        print(f"OCR failed on image {image_path}: {e}")
+        return "[OCR error on image]"
 
 def extract_keywords(text, keywords):
     found = []
@@ -69,32 +86,32 @@ def extract_keywords(text, keywords):
         for word in keywords:
             if word.lower() in line.lower():
                 found.append(line)
-                break  # Avoid adding the same line multiple times if it contains several keywords
-    return "\n".join(found)
+                break
+    return "\n".join(found) if found else "No keywords found."
 
 def generate_pdf(text, output_path):
     try:
         c = canvas.Canvas(output_path, pagesize=letter)
         width, height = letter
         y = height - 50
-        for line in text.split('\n'):
+        lines = text.split('\n') or ["No content extracted."]
+        for line in lines:
             if y < 50:
                 c.showPage()
                 y = height - 50
-            c.drawString(50, y, line)
+            c.drawString(50, y, line.strip())
             y -= 15
         c.save()
     except Exception as e:
         print(f"PDF generation failed: {e}")
 
-
 @app.route('/check')
 def check_tools():
     try:
-        poppler_check = subprocess.run(["pdftoppm", "-v"], capture_output=True, text=True)
+        poppler_check = subprocess.run([os.path.join(POPPLER_PATH, "pdftoppm"), "-v"], capture_output=True, text=True)
         poppler_installed = "✔️ Installed" if poppler_check.returncode == 0 else "❌ Not installed"
 
-        tesseract_check = subprocess.run(["tesseract", "--version"], capture_output=True, text=True)
+        tesseract_check = subprocess.run([pytesseract.pytesseract.tesseract_cmd, "--version"], capture_output=True, text=True)
         tesseract_installed = "✔️ Installed" if tesseract_check.returncode == 0 else "❌ Not installed"
 
         result = f"""
@@ -110,7 +127,7 @@ def check_tools():
 
 @app.route('/', methods=['GET', 'POST'])
 def upload_file():
-    print("Reached the upload_file route")  # Debug line
+    print("Reached the upload_file route")
     try:
         if request.method == 'POST':
             uploaded_file = request.files['file']
@@ -125,8 +142,12 @@ def upload_file():
                 else:
                     text = extract_text_from_image(file_path)
 
+                print(f"Extracted text:\n{text}")
+
                 filtered_text = extract_keywords(text, KEYWORDS)
-                base_filename = os.path.splitext(filename)[0]  # Removes the extension
+                print(f"Filtered text:\n{filtered_text}")
+
+                base_filename = os.path.splitext(filename)[0]
                 output_pdf_path = os.path.join(app.config['OUTPUT_FOLDER'], f'output_{base_filename}.pdf')
                 generate_pdf(filtered_text, output_pdf_path)
 
@@ -134,12 +155,11 @@ def upload_file():
 
             return "Invalid file type. Only .pdf and .jpg are allowed."
         
-        print("Rendering upload.html")  # Debug line
+        print("Rendering upload.html")
         return render_template('upload.html')
     except Exception as e:
         print(f"🔥 Internal Server Error: {e}")
         return "Internal Server Error. Please check server logs.", 500
-
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
