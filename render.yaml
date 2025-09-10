@@ -1,8 +1,16 @@
 services:
   - type: web
-    name: your-app-name
+    name: pdf-ocr-app
     env: python
+    plan: free
     buildCommand: |
-      apt-get update && apt-get install -y tesseract-ocr tesseract-ocr-eng tesseract-ocr-tel poppler-utils
+      apt-get update && apt-get install -y \
+        tesseract-ocr \
+        tesseract-ocr-eng \
+        tesseract-ocr-tel \
+        poppler-utils
       pip install -r requirements.txt
     startCommand: python app.py
+    envVars:
+      - key: PORT
+        value: 10000

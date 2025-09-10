@@ -15,13 +15,17 @@ import platform
 IS_WINDOWS = platform.system() == 'Windows'
 if platform.system() == 'Windows':
     pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+    POPPLER_PATH = r"C:\poppler\Library\bin"
 else:
     pytesseract.pytesseract.tesseract_cmd = "/usr/bin/tesseract"
+    POPPLER_PATH = None  # Use default PATH for pdftoppm
 
 if platform.system() == 'Windows':
     POPPLER_PATH = r"C:\poppler\Library\bin"
 else:
     POPPLER_PATH = "/usr/bin"
+    
+ 
     
 UPLOAD_FOLDER = 'uploads'
 OUTPUT_FOLDER = 'outputs'
@@ -57,7 +61,10 @@ def extract_text_from_pdf(pdf_path):
 
             # Always run OCR and append result
             try:
-                images = convert_from_path(pdf_path, first_page=i+1, last_page=i+1, poppler_path=POPPLER_PATH)
+                if POPPLER_PATH:
+                  images = convert_from_path(pdf_path, first_page=i+1, last_page=i+1, poppler_path=POPPLER_PATH)
+                else:
+                  ++ images = convert_from_path(pdf_path, first_page=i+1, last_page=i+1)
                 for image in images:
                     ocr_text = pytesseract.image_to_string(image, lang='eng+tel')
                     print(f"OCR page {i+1} content:\n{ocr_text}")
@@ -162,6 +169,21 @@ def upload_file():
     except Exception as e:
         print(f"🔥 Internal Server Error: {e}")
         return "Internal Server Error. Please check server logs.", 500
+        
+@app.route('/listlangs')
+def listlangs():
+    try:
+        result = subprocess.run(
+            [pytesseract.pytesseract.tesseract_cmd, '--list-langs'],
+            capture_output=True, text=True
+        )
+        if result.returncode != 0:
+            return f"❌ Error listing languages: {result.stderr}", 500
+        langs = result.stdout.strip().split('\n')
+        return f"<h2>Installed Languages</h2><pre>{langs}</pre>"
+    except Exception as e:
+        return f"❌ Exception occurred: {e}", 500
+
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
