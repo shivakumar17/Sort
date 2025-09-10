@@ -9,6 +9,14 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 import subprocess
 
+# Detect if running on Render or locally
+if os.environ.get('RENDER'):
+    pytesseract.pytesseract.tesseract_cmd = "/usr/bin/tesseract"
+    print("Running on Render - using Linux path:", pytesseract.pytesseract.tesseract_cmd)
+else:
+    pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+    print("Running locally - using Windows path:", pytesseract.pytesseract.tesseract_cmd)
+
 # Detect environment by checking if binaries exist
 if os.path.exists('/usr/bin/tesseract'):
     pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'
