@@ -9,16 +9,21 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 import subprocess
 import platform
-
+import pytesseract
 
 # Detect OS to set correct paths
 IS_WINDOWS = platform.system() == 'Windows'
+
+# Automatically set Tesseract path based on operating system
 if platform.system() == 'Windows':
+    # Windows path for Tesseract
     pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
-    POPPLER_PATH = r"C:\poppler\Library\bin"
+    print("Running on Windows, using Tesseract from:", pytesseract.pytesseract.tesseract_cmd)
 else:
+    # Linux path for Tesseract (Render server)
     pytesseract.pytesseract.tesseract_cmd = "/usr/bin/tesseract"
-    POPPLER_PATH = None  # Use default PATH for pdftoppm
+    print("Running on Linux, using Tesseract from:", pytesseract.pytesseract.tesseract_cmd)
+
 
 if platform.system() == 'Windows':
     POPPLER_PATH = r"C:\poppler\Library\bin"
