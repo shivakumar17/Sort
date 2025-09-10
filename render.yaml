@@ -1,9 +1,5 @@
 services:
   - type: web
     name: sort-0fx4
-    env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: python app.py
-    preDeployCommands:
-      - apt-get update
-      - apt-get install -y tesseract-ocr poppler-utils
+    env: docker
+    dockerfilePath: ./Dockerfile
