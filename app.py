@@ -13,13 +13,16 @@ import platform
 
 # Detect OS to set correct paths
 IS_WINDOWS = platform.system() == 'Windows'
-if IS_WINDOWS:
+if platform.system() == 'Windows':
     pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+else:
+    pytesseract.pytesseract.tesseract_cmd = "/usr/bin/tesseract"
+
+if platform.system() == 'Windows':
     POPPLER_PATH = r"C:\poppler\Library\bin"
 else:
-    pytesseract.pytesseract.tesseract_cmd = "tesseract"  # Default Linux PATH
-    POPPLER_PATH = None  # Use system PATH for pdftoppm
-
+    POPPLER_PATH = "/usr/bin"
+    
 UPLOAD_FOLDER = 'uploads'
 OUTPUT_FOLDER = 'outputs'
 ALLOWED_EXTENSIONS = {'pdf', 'jpg', 'jpeg'}
