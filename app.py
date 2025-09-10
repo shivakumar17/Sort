@@ -64,7 +64,7 @@ def extract_text_from_pdf(pdf_path):
                 if POPPLER_PATH:
                   images = convert_from_path(pdf_path, first_page=i+1, last_page=i+1, poppler_path=POPPLER_PATH)
                 else:
-                  ++ images = convert_from_path(pdf_path, first_page=i+1, last_page=i+1)
+                   images = convert_from_path(pdf_path, first_page=i+1, last_page=i+1)
                 for image in images:
                     ocr_text = pytesseract.image_to_string(image, lang='eng+tel')
                     print(f"OCR page {i+1} content:\n{ocr_text}")
