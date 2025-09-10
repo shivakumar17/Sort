@@ -10,16 +10,15 @@ from reportlab.pdfgen import canvas
 import subprocess
 import platform
 
+
 # Detect OS to set correct paths
 IS_WINDOWS = platform.system() == 'Windows'
-
 if IS_WINDOWS:
     pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
     POPPLER_PATH = r"C:\poppler\Library\bin"
 else:
-    # Linux paths on Render server
-    pytesseract.pytesseract.tesseract_cmd = "/usr/bin/tesseract"
-    POPPLER_PATH = "/usr/bin"
+    pytesseract.pytesseract.tesseract_cmd = "tesseract"  # Default Linux PATH
+    POPPLER_PATH = None  # Use system PATH for pdftoppm
 
 UPLOAD_FOLDER = 'uploads'
 OUTPUT_FOLDER = 'outputs'
@@ -55,7 +54,7 @@ def extract_text_from_pdf(pdf_path):
 
             # Always run OCR and append result
             try:
-                images = convert_from_path(pdf_path, first_page=i+1, last_page=i+1, poppler_path=None if not IS_WINDOWS else POPPLER_PATH)
+                images = convert_from_path(pdf_path, first_page=i+1, last_page=i+1, poppler_path=POPPLER_PATH)
                 for image in images:
                     ocr_text = pytesseract.image_to_string(image, lang='eng+tel')
                     print(f"OCR page {i+1} content:\n{ocr_text}")
