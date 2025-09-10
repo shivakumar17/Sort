@@ -8,30 +8,23 @@ import pytesseract
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 import subprocess
-import platform
-import pytesseract
 
-# Detect OS to set correct paths
-IS_WINDOWS = platform.system() == 'Windows'
-
-# Automatically set Tesseract path based on operating system
-if platform.system() == 'Windows':
-    # Windows path for Tesseract
+# Detect environment by checking if binaries exist
+if os.path.exists('/usr/bin/tesseract'):
+    pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'
+    print("Running on Linux, using Tesseract from:", pytesseract.pytesseract.tesseract_cmd)
+else:
+    # Fallback for Windows
     pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
     print("Running on Windows, using Tesseract from:", pytesseract.pytesseract.tesseract_cmd)
+
+if os.path.exists('/usr/bin/pdftoppm'):
+    POPPLER_PATH = '/usr/bin'
+    print("Poppler found at /usr/bin")
 else:
-    # Linux path for Tesseract (Render server)
-    pytesseract.pytesseract.tesseract_cmd = "/usr/bin/tesseract"
-    print("Running on Linux, using Tesseract from:", pytesseract.pytesseract.tesseract_cmd)
-
-
-if platform.system() == 'Windows':
     POPPLER_PATH = r"C:\poppler\Library\bin"
-else:
-    POPPLER_PATH = "/usr/bin"
-    
- 
-    
+    print("Poppler fallback path:", POPPLER_PATH)
+
 UPLOAD_FOLDER = 'uploads'
 OUTPUT_FOLDER = 'outputs'
 ALLOWED_EXTENSIONS = {'pdf', 'jpg', 'jpeg'}
@@ -43,7 +36,6 @@ app.config['OUTPUT_FOLDER'] = OUTPUT_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
-# Keywords to search for
 KEYWORDS = ['invoice', 'total', 'date', 'amount', 'paid', 'AUTOSAR', 'telugu', 'mother', 'Aadhaar']
 
 def allowed_file(filename):
@@ -64,12 +56,8 @@ def extract_text_from_pdf(pdf_path):
             if page_text:
                 text += page_text + "\n"
 
-            # Always run OCR and append result
             try:
-                if POPPLER_PATH:
-                  images = convert_from_path(pdf_path, first_page=i+1, last_page=i+1, poppler_path=POPPLER_PATH)
-                else:
-                   images = convert_from_path(pdf_path, first_page=i+1, last_page=i+1)
+                images = convert_from_path(pdf_path, first_page=i+1, last_page=i+1, poppler_path=POPPLER_PATH)
                 for image in images:
                     ocr_text = pytesseract.image_to_string(image, lang='eng+tel')
                     print(f"OCR page {i+1} content:\n{ocr_text}")
@@ -139,57 +127,4 @@ def check_tools():
     except Exception as e:
         return f"<p>❌ Error checking tools: {e}</p>"
 
-@app.route('/', methods=['GET', 'POST'])
-def upload_file():
-    print("Reached the upload_file route")
-    try:
-        if request.method == 'POST':
-            uploaded_file = request.files['file']
-            if uploaded_file and allowed_file(uploaded_file.filename):
-                filename = secure_filename(uploaded_file.filename)
-                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                uploaded_file.save(file_path)
-
-                ext = filename.rsplit('.', 1)[1].lower()
-                if ext == 'pdf':
-                    text = extract_text_from_pdf(file_path)
-                else:
-                    text = extract_text_from_image(file_path)
-
-                print(f"Extracted text:\n{text}")
-
-                filtered_text = extract_keywords(text, KEYWORDS)
-                print(f"Filtered text:\n{filtered_text}")
-
-                base_filename = os.path.splitext(filename)[0]
-                output_pdf_path = os.path.join(app.config['OUTPUT_FOLDER'], f'output_{base_filename}.pdf')
-                generate_pdf(filtered_text, output_pdf_path)
-
-                return send_file(output_pdf_path, as_attachment=True)
-
-            return "Invalid file type. Only .pdf and .jpg are allowed."
-        
-        print("Rendering upload.html")
-        return render_template('upload.html')
-    except Exception as e:
-        print(f"🔥 Internal Server Error: {e}")
-        return "Internal Server Error. Please check server logs.", 500
-        
-@app.route('/listlangs')
-def listlangs():
-    try:
-        result = subprocess.run(
-            [pytesseract.pytesseract.tesseract_cmd, '--list-langs'],
-            capture_output=True, text=True
-        )
-        if result.returncode != 0:
-            return f"❌ Error listing languages: {result.stderr}", 500
-        langs = result.stdout.strip().split('\n')
-        return f"<h2>Installed Languages</h2><pre>{langs}</pre>"
-    except Exception as e:
-        return f"❌ Exception occurred: {e}", 500
-
-
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 10000))
-    app.run(host='0.0.0.0', port=port, debug=True)
+@app.route('/', methods=['GET',]()
